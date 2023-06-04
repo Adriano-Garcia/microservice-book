@@ -11,6 +11,10 @@ import com.microservice.model.Book;
 import com.microservice.proxy.CambioProxy;
 import com.microservice.repositories.BookRepository;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Book endpoint")
 @RestController
 @RequestMapping("/book-service")
 public class BookController {
@@ -24,7 +28,7 @@ public class BookController {
 	@Autowired
 	private CambioProxy proxy;
 	
-	//http://localhost:8100/book-service/14/BRL
+	@Operation(summary = "Busca um livro por id")
 	@GetMapping(value = "/{id}/{currency}")
 	public Book findBook(@PathVariable("id") Long id, @PathVariable("currency") String currency) {
 		var book = repository.findById(id);
