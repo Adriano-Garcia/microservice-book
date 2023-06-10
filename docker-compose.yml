@@ -1,0 +1,90 @@
+version: "3.8"
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      TZ: America/Sao_Paulo
+      POSTGRES_USER: dev_java
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: book_service
+      POSTGRES_PORT: 5432
+    networks:
+      - microservice
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+  db2:
+    image: postgres
+    restart: always
+    environment:
+      TZ: America/Sao_Paulo
+      POSTGRES_USER: dev_java
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: cambio_service
+      POSTGRES_PORT: 5432
+    networks:
+      - microservice
+    volumes:
+      - pg-data2:/var/lib/postgresql/data
+  zipkin-server:
+    image: openzipkin/zipkin:2.23.2
+    ports:
+      - 9411:9411
+    networks:
+      - microservice
+  eureka:
+    image: adrianodevfull/eureka:0.0.1-SNAPSHOT
+    ports:
+      - 8761:8761
+    networks:
+      - microservice
+  api-gateway:
+    image: adrianodevfull/api-gateway:0.0.1-SNAPSHOT
+    ports:
+      - 8765:8765
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://eureka:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+    depends_on:
+      - eureka
+    networks:
+      - microservice
+  cambio-service:
+    image: adrianodevfull/cambio:0.0.1-SNAPSHOT
+    restart: always
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://eureka:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+      SPRING.DATASOURCE.URL: jdbc:postgresql://db2:5432/cambio_service
+      SPRING.DATASOURCE.USERNAME: dev_java
+      SPRING.DATASOURCE.PASSWORD: 123
+    ports:
+      - 8000:8000
+    depends_on:
+      - eureka
+      - db2
+    networks:
+      - microservice
+  book-service:
+    image: adrianodevfull/book-service:0.0.1-SNAPSHOT
+    restart: always
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://eureka:8761/eureka
+      SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411/
+      SPRING.DATASOURCE.URL: jdbc:postgresql://db:5432/book_service
+      SPRING.DATASOURCE.USERNAME: dev_java
+      SPRING.DATASOURCE.PASSWORD: 123
+    ports:
+      - 8100:8100
+    depends_on:
+      - eureka
+      - db
+      - cambio-service
+    networks:
+      - microservice
+networks:
+  microservice:
+    driver: bridge
+volumes:
+  pg-data:
+  pg-data2:
